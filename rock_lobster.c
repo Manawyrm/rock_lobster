@@ -1,13 +1,11 @@
-#include <linux/module.h>
-#include <linux/moduleparam.h>
-#include <linux/init.h>
 #include <linux/kernel.h>
+#include <linux/module.h>
 #include <linux/proc_fs.h>
-#include <asm/uaccess.h>
 #include <linux/random.h>
-#define BUFSIZE  100
+#include <linux/seq_file.h>
+#include <linux/stat.h>
 
-MODULE_LICENSE("GPLv3");
+MODULE_LICENSE("Proprietary");
 MODULE_AUTHOR("Tobias Maedel");
 
 // Not GPLv3:
@@ -70,46 +68,25 @@ const char *lobster_lyrics[] = {
 
 static struct proc_dir_entry *ent;
 
-static ssize_t lobster_write(struct file *file, const char __user *ubuf,size_t count, loff_t *ppos)
+static int lobster_show(struct seq_file *seq, void *priv)
 {
-	return -1;
-}
-
-static ssize_t lobster_read(struct file *file, char __user *ubuf,size_t count, loff_t *ppos)
-{
-	char buf[BUFSIZE];
-	int len = 0;
-	int random;
-
-	if(*ppos > 0 || count < BUFSIZE)
-		return 0;
+	unsigned int random;
 
 	get_random_bytes(&random, sizeof(random));
-	len += sprintf(buf, "%s\n", lobster_lyrics[random % (sizeof(lobster_lyrics) / sizeof(char*))]);
-
-	if(copy_to_user(ubuf, buf, len))
-		return -EFAULT;
-
-	*ppos = len;
-	return len;
-}
-
-static const struct proc_ops lobster_ops =
-{
-	.proc_read = lobster_read,
-	.proc_write = lobster_write,
-};
-
-static int simple_init(void)
-{
-	ent = proc_create("lobster", 0660, NULL, &lobster_ops);
+	seq_printf(seq, "%s\n", lobster_lyrics[random % ARRAY_SIZE(lobster_lyrics)]);
 	return 0;
 }
 
-static void simple_cleanup(void)
+static int lobster_init(void)
+{
+	ent = proc_create_single("lobster", S_IRUGO, NULL, lobster_show);
+	return 0;
+}
+
+static void lobster_cleanup(void)
 {
 	proc_remove(ent);
 }
 
-module_init(simple_init);
-module_exit(simple_cleanup);
+module_init(lobster_init);
+module_exit(lobster_cleanup);
