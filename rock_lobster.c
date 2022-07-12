@@ -70,10 +70,7 @@ static struct proc_dir_entry *ent;
 
 static int lobster_show(struct seq_file *seq, void *priv)
 {
-	unsigned int random;
-
-	get_random_bytes(&random, sizeof(random));
-	seq_printf(seq, "%s\n", lobster_lyrics[random % ARRAY_SIZE(lobster_lyrics)]);
+	seq_printf(seq, "%s\n", lobster_lyrics[get_random_u32() % ARRAY_SIZE(lobster_lyrics)]);
 	return 0;
 }
 
